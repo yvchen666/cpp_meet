@@ -1,0 +1,26 @@
+cmake_minimum_required(VERSION 3.20)
+project(cpp_meet CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(deps)
+
+enable_testing()
+
+add_subdirectory(module01_network_core)
+add_subdirectory(module02_rtp_rtcp)
+add_subdirectory(module03_stun_ice)
+add_subdirectory(module04_dtls_srtp)
+add_subdirectory(module05_signaling)
+add_subdirectory(module06_audio)
+add_subdirectory(module07_video)
+add_subdirectory(module08_weak_network)
+add_subdirectory(module09_sfu)
+if(Qt6_FOUND)
+    add_subdirectory(module10_qt_client)
+    add_subdirectory(module11_whiteboard)
+endif()
+add_subdirectory(module12_integration)
