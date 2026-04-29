@@ -35,14 +35,15 @@ SFU 的核心价值在于：**只转发，不解码**。每路 RTP 包到达 SFU
 
 虽然本模块以明文 RTP 实现（教学简化），生产环境需要处理 SRTP 重加密：
 
-```
-Publisher                     SFU                      Subscriber
-   |                           |                            |
-   |-- SRTP (pub_key) -------> |                            |
-   |                           | 用 pub_key 解密            |
-   |                           | 得到明文 RTP               |
-   |                           | 用 sub_key 重新加密        |
-   |                           |-- SRTP (sub_key) -------> |
+```mermaid
+sequenceDiagram
+    participant Publisher
+    participant SFU
+    participant Subscriber
+
+    Publisher->>SFU: SRTP (pub_key)
+    Note over SFU: 用 pub_key 解密<br/>得到明文 RTP<br/>用 sub_key 重新加密
+    SFU->>Subscriber: SRTP (sub_key)
 ```
 
 - 每个 peer 与 SFU 之间独立完成 DTLS 握手，各有一套独立的 SRTP 密钥

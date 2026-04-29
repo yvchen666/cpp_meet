@@ -28,15 +28,22 @@
 
 ### 模块在整体架构中的位置
 
-```
-module01_rtp      (RTP 包构造/解析)
-module02_udp      (UDP socket 封装)
-module03_weak_net (FEC 编解码)
-      ↓
-module09_sfu      (SFU 路由)
-module11_whiteboard (CRDT 白板)
-      ↓
-module12_integration  ← 本模块：验证以上全部协作正确
+```mermaid
+graph TD
+    M01["module01_rtp<br/>(RTP 包构造/解析)"]
+    M02["module02_udp<br/>(UDP socket 封装)"]
+    M03["module03_weak_net<br/>(FEC 编解码)"]
+    M09["module09_sfu<br/>(SFU 路由)"]
+    M11["module11_whiteboard<br/>(CRDT 白板)"]
+    M12["module12_integration<br/>本模块：验证以上全部协作正确"]
+
+    M01 --> M09
+    M02 --> M09
+    M03 --> M09
+    M01 --> M11
+    M02 --> M11
+    M09 --> M12
+    M11 --> M12
 ```
 
 ---

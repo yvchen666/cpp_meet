@@ -298,16 +298,12 @@ d(t) = OWD(t) - OWD(t-1)
 
 #### 状态机
 
-```
-         slope > 0.5ms/pkt
-Normal ─────────────────────→ Overuse
-  ↑                              │
-  │  slope ∈ [-0.5, 0.5]         │ 乘性减 × 0.85
-  │                              ↓
-  └──────────── Normal ←── Overuse 解除
-  ↓
-  slope < -0.5ms/pkt
-Underuse（加性增 +100kbps/次）
+```mermaid
+stateDiagram-v2
+    Normal --> Overuse : slope > 0.5ms/pkt
+    Overuse --> Normal : slope ∈ [-0.5, 0.5]（乘性减 × 0.85）
+    Normal --> Underuse : slope < -0.5ms/pkt
+    Underuse --> Normal : 加性增 +100kbps/次
 ```
 
 #### AIMD 码率控制

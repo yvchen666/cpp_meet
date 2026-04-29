@@ -2,34 +2,43 @@
 
 ## 完整呼叫建立流程
 
-```
-A                  Signal              SFU              B
-│── WS connect ──▶│                   │                 │
-│── join(room) ──▶│                   │                 │
-│◀── room_info ───│                   │                 │
-│                 │◀── WS connect ────────────────────▶│
-│                 │◀── join(room) ─────────────────────│
-│◀── peer_joined ─│                   │                 │
-│                 │                   │                 │
-│  [创建 ICE Agent, 收集候选]          │                 │
-│── offer(SDP) ──▶│── offer(SDP) ────▶│                 │
-│                 │── offer(SDP) ──────────────────────▶│
-│                 │◀── answer(SDP) ────────────────────│
-│◀── answer(SDP) ─│                   │                 │
-│                 │                   │                 │
-│  [STUN Binding Request/Response]    │                 │
-│──────── STUN ─────────────────────▶│                 │
-│◀─────── STUN ──────────────────────│                 │
-│                 │                   │                 │
-│  [DTLS握手]     │                   │                 │
-│──────── DTLS ClientHello ─────────▶│                 │
-│◀─────── DTLS ServerHello+Cert ─────│                 │
-│──────── DTLS Certificate ─────────▶│                 │
-│◀─────── DTLS Finished ─────────────│                 │
-│                 │                   │                 │
-│  [SRTP密钥导出, 开始媒体]            │                 │
-│══════ SRTP(RTP音频/视频) ══════════▶│═════════════════▶│
-│◀═════ SRTP(RTP音频/视频) ═══════════│◀════════════════│
+```mermaid
+sequenceDiagram
+    participant A
+    participant Signal
+    participant SFU
+    participant B
+
+    A->>Signal: WS connect
+    A->>Signal: join(room)
+    Signal-->>A: room_info
+    B->>Signal: WS connect
+    B->>Signal: join(room)
+    Signal-->>A: peer_joined
+
+    Note over A: 创建 ICE Agent, 收集候选
+
+    A->>Signal: offer(SDP)
+    Signal->>SFU: offer(SDP)
+    Signal->>B: offer(SDP)
+    B->>Signal: answer(SDP)
+    Signal-->>A: answer(SDP)
+
+    Note over A,SFU: STUN Binding Request/Response
+    A->>SFU: STUN
+    SFU-->>A: STUN
+
+    Note over A,SFU: DTLS握手
+    A->>SFU: DTLS ClientHello
+    SFU-->>A: DTLS ServerHello+Cert
+    A->>SFU: DTLS Certificate
+    SFU-->>A: DTLS Finished
+
+    Note over A,SFU: SRTP密钥导出, 开始媒体
+    A->>SFU: SRTP(RTP音频/视频)
+    SFU->>B: SRTP(RTP音频/视频)
+    B->>SFU: SRTP(RTP音频/视频)
+    SFU->>A: SRTP(RTP音频/视频)
 ```
 
 ## RTP/RTCP 包格式

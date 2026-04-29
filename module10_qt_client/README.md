@@ -16,11 +16,11 @@ GPU 天生适合这类"对每个像素独立执行同一段代码"的任务。Fr
 
 ### 模块定位
 
-```
-cpp_meet 课程整体架构
-├── module01_network_core   网络基础（TCP/RTP）
-├── ...
-└── module10_qt_client      Qt6 UI 层（本模块）
+```mermaid
+graph TD
+    M01["module01_network_core\n网络基础（TCP/RTP）"] --> M10
+    DOTS["...（其他模块）"] --> M10
+    M10["module10_qt_client\nQt6 UI 层（本模块）"]
 ```
 
 本模块依赖 `module01_network_core`，在其之上构建媒体处理流水线 `MediaPipeline` 和 OpenGL 渲染器 `YuvRenderer`。
@@ -76,16 +76,15 @@ graph TD
 
 ### 类继承关系
 
-```
-QObject
-└── QOpenGLWidget (Qt6::OpenGLWidgets)
-    └── YuvRenderer
-        ├── mixin: QOpenGLFunctions
-        └── 持有: QOpenGLShaderProgram*, GLuint textures_[3]
+```mermaid
+graph TD
+    QObj1[QObject] --> QOW[QOpenGLWidget\nQt6::OpenGLWidgets]
+    QOW --> YR[YuvRenderer]
+    YR --- MIX["mixin: QOpenGLFunctions"]
+    YR --- H1["持有: QOpenGLShaderProgram*\nGLuint textures_[3]"]
 
-QObject
-└── MediaPipeline
-    └── 持有: std::thread worker_, std::atomic<bool> running_
+    QObj2[QObject] --> MP[MediaPipeline]
+    MP --- H2["持有: std::thread worker_\nstd::atomic&lt;bool&gt; running_"]
 ```
 
 ---

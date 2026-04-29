@@ -108,21 +108,20 @@ graph TD
 
 ### 4.1 Opus 编码器内部架构
 
-```
-输入 PCM（int16_t 采样，960 个）
-           |
-           v
-  [带宽检测]  → 判断信号带宽：NB(8kHz)/MB(12kHz)/WB(16kHz)/SWB(24kHz)/FB(48kHz)
-           |
-           v
-  [模式选择]
-   ┌────────┬──────────┬───────────────┐
-   │  SILK  │ Hybrid   │     CELT      │
-   │ ≤8kHz  │ 12-20kHz │  全带宽/音乐  │
-   └────────┴──────────┴───────────────┘
-           |
-           v
-  [编码输出]  → Opus 字节流（自描述格式，包含 TOC 字节标识模式）
+```mermaid
+flowchart TD
+    PCM["输入 PCM（int16_t 采样，960 个）"]
+    BW["带宽检测\nNB(8kHz) / MB(12kHz) / WB(16kHz) / SWB(24kHz) / FB(48kHz)"]
+    MODE["模式选择"]
+    SILK["SILK\n≤8kHz"]
+    HYBRID["Hybrid\n12-20kHz"]
+    CELT["CELT\n全带宽/音乐"]
+    OUT["编码输出\nOpus 字节流（含 TOC 字节标识模式）"]
+
+    PCM --> BW --> MODE
+    MODE --> SILK --> OUT
+    MODE --> HYBRID --> OUT
+    MODE --> CELT --> OUT
 ```
 
 OPUS_APPLICATION_VOIP（本模块使用）vs OPUS_APPLICATION_AUDIO：
@@ -140,18 +139,21 @@ OPUS_APPLICATION_VOIP（本模块使用）vs OPUS_APPLICATION_AUDIO：
 Opus VOIP 模式支持 LBRR（Low Bit-Rate Redundancy），在包含当前帧的 Opus 包中，
 同时携带上一帧的低码率冗余编码：
 
-```
-数据包 N 的内容：
-  [TOC 字节] [当前帧 N 的编码数据] [帧 N-1 的 LBRR 冗余数据]
+```mermaid
+flowchart TD
+    PKT["数据包 N"]
+    TOC["TOC 字节"]
+    CUR["当前帧 N 的编码数据"]
+    LBRR["帧 N-1 的 LBRR 冗余数据"]
+    DN["恢复：帧 N"]
+    DN1["恢复：帧 N-1\n（若包 N-1 丢失）"]
 
-解码端收到包 N 后可以恢复：
-  - 帧 N（来自包 N）
-  - 帧 N-1（来自包 N 的冗余，如果包 N-1 丢失了）
-
-opus_decode() 第 5 个参数 decode_fec：
-  0 = 正常解码当前包
-  1 = 解码冗余数据（用于恢复前一个丢失的包）
+    PKT --> TOC
+    PKT --> CUR --> DN
+    PKT --> LBRR --> DN1
 ```
+
+`opus_decode()` 第 5 个参数 `decode_fec`：`0` = 正常解码当前包；`1` = 解码冗余数据（恢复前一个丢失的包）。
 
 FEC 的代价：每个包的字节数增加约 20-50%，但在丢包率 < 20% 的网络下，
 音质比重传方案（RTT 延迟）好得多。

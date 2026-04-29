@@ -174,30 +174,24 @@ UDP 收包 → feed_data() → BIO_write(rbio) → [OpenSSL 内部处理] → BI
 
 ### 4.3 DTLS 握手状态机
 
-```
-Client                                     Server
-  |                                           |
-  |--- ClientHello --------------------------->|
-  |    (含 DTLS cookie，首次为空)              |
-  |                                           |
-  |<-- HelloVerifyRequest ------------------- |  (DTLS 特有，防 DoS)
-  |    (含 cookie)                            |
-  |                                           |
-  |--- ClientHello（含 cookie）-------------->|
-  |                                           |
-  |<-- ServerHello -------------------------- |
-  |<-- Certificate (自签名 RSA 2048) -------- |
-  |<-- ServerHelloDone ---------------------- |
-  |                                           |
-  |--- ClientKeyExchange（RSA 加密预主密钥） ->|
-  |--- ChangeCipherSpec --------------------> |
-  |--- Finished（加密）--------------------> |
-  |                                           |
-  |<-- ChangeCipherSpec --------------------- |
-  |<-- Finished（加密）--------------------- |
-  |                                           |
-  [握手完成，两端 handshake_done_ = true]
-  [双方调用 export_srtp_keying_material()]
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Server
+
+    Client->>Server: ClientHello（DTLS cookie 为空）
+    Server-->>Client: HelloVerifyRequest（含 cookie，DTLS 特有，防 DoS）
+    Client->>Server: ClientHello（含 cookie）
+    Server-->>Client: ServerHello
+    Server-->>Client: Certificate（自签名 RSA 2048）
+    Server-->>Client: ServerHelloDone
+    Client->>Server: ClientKeyExchange（RSA 加密预主密钥）
+    Client->>Server: ChangeCipherSpec
+    Client->>Server: Finished（加密）
+    Server-->>Client: ChangeCipherSpec
+    Server-->>Client: Finished（加密）
+    Note over Client,Server: 握手完成，两端 handshake_done_ = true
+    Note over Client,Server: 双方调用 export_srtp_keying_material()
 ```
 
 OpenSSL 内部通过 `SSL_do_handshake()` 驱动状态机。返回 `SSL_ERROR_WANT_READ` 表示等待对端数据，返回 `1` 表示握手完成。

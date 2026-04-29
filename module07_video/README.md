@@ -99,18 +99,14 @@ graph TD
 
 YUV420P（又称 I420）是平面格式（planar），三个分量分别连续存储：
 
-```
-内存偏移 0
-┌──────────────────────────────────────┐
-│          Y 平面（亮度）               │  大小 = width × height 字节
-│  每像素 1 字节，范围 [16, 235]         │  （行优先，无行对齐填充）
-├──────────────────────────────────────┤
-│          U 平面（蓝色差 Cb）           │  大小 = (width/2) × (height/2) 字节
-│  每 2×2 像素块共用 1 个 U 值           │  = width × height / 4
-├──────────────────────────────────────┤
-│          V 平面（红色差 Cr）           │  大小 = (width/2) × (height/2) 字节
-└──────────────────────────────────────┘
-总大小 = width × height × 3 / 2
+```mermaid
+graph TD
+    Y["Y 平面（亮度）\n每像素 1 字节，范围 [16,235]\n大小 = width × height"]
+    U["U 平面（蓝色差 Cb）\n每 2×2 像素块共用 1 个值\n大小 = width × height / 4"]
+    V["V 平面（红色差 Cr）\n大小 = width × height / 4"]
+    Total["总大小 = width × height × 3 / 2"]
+
+    Y --> U --> V --> Total
 ```
 
 **色度二次采样（4:2:0）的意义**：人眼对亮度（Y）变化的敏感度远高于对色度（U/V）变化的敏感度，因此将 U/V 的采样率降低为 Y 的 1/4 面积，几乎不影响主观画质，但带宽节省 50%（相比 YUV444）。
@@ -131,33 +127,19 @@ std::memcpy(pic_in_.img.plane[2], frame.data.data() + y_size + uv_size, uv_size)
 
 虽然本模块未实现摄像头采集，完整的视频采集管线需通过 V4L2（Video for Linux 2）内核接口获取 YUV 帧：
 
-```
-1. open("/dev/video0", O_RDWR)
-       ↓
-2. VIDIOC_QUERYCAP  → 查询设备能力（确认支持 V4L2_CAP_VIDEO_CAPTURE）
-       ↓
-3. VIDIOC_S_FMT     → 设置捕获格式
-       v4l2_format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUV420
-       v4l2_format.fmt.pix.width  = 640
-       v4l2_format.fmt.pix.height = 480
-       ↓
-4. VIDIOC_REQBUFS   → 申请内核 DMA 缓冲区（count=4，type=MMAP）
-       ↓
-5. for each buf:
-       VIDIOC_QUERYBUF → 获取缓冲区偏移和长度
-       mmap(NULL, len, PROT_READ|PROT_WRITE, MAP_SHARED, fd, offset)
-           → 将内核缓冲区映射到用户空间，零拷贝关键
-       VIDIOC_QBUF     → 将缓冲区入队，告知驱动可以填充
-       ↓
-6. VIDIOC_STREAMON  → 启动采集流
-       ↓
-7. 采集循环:
-       select(fd) / poll(fd)  → 阻塞等待帧就绪
-       VIDIOC_DQBUF           → 取出已填充的缓冲区（获得帧数据指针）
-       处理帧（复制或直接传入 H264Encoder::encode()）
-       VIDIOC_QBUF            → 将缓冲区重新入队供驱动复用
-       ↓
-8. VIDIOC_STREAMOFF → 停止采集，释放缓冲区
+```mermaid
+flowchart TD
+    S1["1. open('/dev/video0', O_RDWR)"]
+    S2["2. VIDIOC_QUERYCAP\n查询设备能力"]
+    S3["3. VIDIOC_S_FMT\n设置格式: YUV420, 640×480"]
+    S4["4. VIDIOC_REQBUFS\n申请内核 DMA 缓冲区 (count=4, MMAP)"]
+    S5["5. for each buf:\nVIDIOC_QUERYBUF → mmap 零拷贝映射\nVIDIOC_QBUF 入队"]
+    S6["6. VIDIOC_STREAMON\n启动采集流"]
+    S7["7. 采集循环:\nselect/poll 等待帧就绪\nVIDIOC_DQBUF 取帧\n处理帧\nVIDIOC_QBUF 重新入队"]
+    S8["8. VIDIOC_STREAMOFF\n停止采集，释放缓冲区"]
+
+    S1 --> S2 --> S3 --> S4 --> S5 --> S6 --> S7 --> S8
+    S7 -->|循环| S7
 ```
 
 mmap 模式避免了内核到用户空间的数据拷贝，是高性能采集的标准实践。

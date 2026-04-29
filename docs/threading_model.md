@@ -2,17 +2,17 @@
 
 ## 客户端线程架构（7-8个线程）
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│ 音频采集线程  AudioCapturer → RingBuffer<PCMFrame,1024>          │
-│ 视频采集线程  VideoCapturer → RingBuffer<YUVFrame,8>             │
-│ 音频编码线程  OpusEncoder → RTP打包 → FEC → NetworkThread        │
-│ 视频编码线程  H264Encoder → RTP打包 → FEC → NetworkThread        │
-│ 网络IO线程   epoll: ICE心跳 + DTLS驱动 + SRTP收发               │
-│ 解码线程     JitterBuffer → Opus/H264解码 → Qt渲染队列           │
-│ Qt主线程     UI事件 + OpenGL渲染 (QueuedConnection)              │
-│ 音频输出线程  ALSA播放 snd_pcm_writei 实时循环                   │
-└──────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    AC["音频采集线程\nAudioCapturer"] --> RB1["RingBuffer&lt;PCMFrame,1024&gt;"]
+    VC["视频采集线程\nVideoCapturer"] --> RB2["RingBuffer&lt;YUVFrame,8&gt;"]
+    RB1 --> AE["音频编码线程\nOpusEncoder → RTP打包 → FEC"]
+    RB2 --> VE["视频编码线程\nH264Encoder → RTP打包 → FEC"]
+    AE --> NT["网络IO线程\nepoll: ICE心跳 + DTLS驱动 + SRTP收发"]
+    VE --> NT
+    NT --> DT["解码线程\nJitterBuffer → Opus/H264解码"]
+    DT --> QT["Qt主线程\nUI事件 + OpenGL渲染 (QueuedConnection)"]
+    NT --> AO["音频输出线程\nALSA播放 snd_pcm_writei"]
 ```
 
 ## 跨线程通信机制

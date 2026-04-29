@@ -24,22 +24,17 @@
 成数据收发。整个模块没有第三方依赖，只依赖 Linux 内核 API（`epoll`、`eventfd`）和
 C++11 标准原子库。
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    上层业务模块                              │
-│      module02_rtp_rtcp  /  module03_jitter_buffer  / ...    │
-└───────────────────────┬─────────────────────────────────────┘
-                        │ 使用
-          ┌─────────────▼──────────────┐
-          │      module01_network_core  │
-          │  ┌─────────┐ ┌──────────┐  │
-          │  │RingBuffer│ │UdpSocket │  │
-          │  └────┬────┘ └────┬─────┘  │
-          │       │           │注册     │
-          │       │      ┌────▼─────┐  │
-          │       └──────│IoContext │  │
-          │              └──────────┘  │
-          └─────────────────────────────┘
+```mermaid
+graph TD
+    Upper["上层业务模块\nmodule02_rtp_rtcp / module03_jitter_buffer / ..."]
+    subgraph Core["module01_network_core"]
+        RB["RingBuffer"]
+        UDP["UdpSocket"]
+        IO["IoContext"]
+        RB --> IO
+        UDP -->|注册| IO
+    end
+    Upper -->|使用| Core
 ```
 
 ---
